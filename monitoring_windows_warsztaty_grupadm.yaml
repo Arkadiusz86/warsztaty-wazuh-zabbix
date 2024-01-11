@@ -1,0 +1,151 @@
+zabbix_export:
+  version: '6.4'
+  template_groups:
+    - uuid: 7df96b18c230490a9a0a9e2307226338
+      name: Templates
+  templates:
+    - uuid: dd83708621384e48af14c28e475d5a5e
+      template: 'Monitoring Windows'
+      name: 'Monitoring Windows'
+      groups:
+        - name: Templates
+      items:
+        - uuid: 8d3d94491e754148abacefb2686f6cd1
+          name: 'Logi AD Web'
+          type: ZABBIX_ACTIVE
+          key: 'eventlog[Active Directory Web Services,,,,1202,,]'
+          delay: 10s
+          trends: '0'
+          value_type: LOG
+        - uuid: 2ac681b9968547238dd05abba9b5eb2a
+          name: 'Dostępność Hosta'
+          type: SIMPLE
+          key: icmpping
+          triggers:
+            - uuid: 66f065a4f36544da90838807acf3f9b8
+              expression: 'last(/Monitoring Windows/icmpping)<1'
+              name: 'Host Nie Działa'
+              priority: DISASTER
+        - uuid: a284e2746ec04af089dfcb5bd3b4c8c8
+          name: 'Sieć - Ruch Przychodzący'
+          key: 'net.if.in["{2AC8116E-8146-4494-8A06-8138A35BF197}"]'
+          units: bps
+          preprocessing:
+            - type: MULTIPLIER
+              parameters:
+                - '8'
+            - type: CHANGE_PER_SECOND
+              parameters:
+                - ''
+        - uuid: 70e7f5c674f64b77bc4d66ee7d75d8e5
+          name: 'Sieć - Ruch Wychodzący'
+          key: 'net.if.out["{2AC8116E-8146-4494-8A06-8138A35BF197}"]'
+          units: bps
+          preprocessing:
+            - type: MULTIPLIER
+              parameters:
+                - '8'
+            - type: CHANGE_PER_SECOND
+              parameters:
+                - ''
+        - uuid: 9bd0fff92a8d4574897d2da12ecf0f78
+          name: 'Stan Usługi AD Web'
+          key: 'service.info["ADWS",state]'
+          triggers:
+            - uuid: 342a2e1b0be3478b8499d39c7a96fdf3
+              expression: 'last(/Monitoring Windows/service.info["ADWS",state],#1)>0'
+              name: 'Nie działa AD WEB'
+              priority: AVERAGE
+        - uuid: 319d12bc57ee4369a06267cc97538f57
+          name: 'Stan Usługi AD'
+          key: 'service.info["NTDS",state]'
+          triggers:
+            - uuid: ca2462e9317b4bf09f72469c6c13db16
+              expression: 'last(/Monitoring Windows/service.info["NTDS",state],#1)>0'
+              name: 'Nie działa AD'
+              priority: HIGH
+        - uuid: adeca8a6fec44e1f9d1f051d07b09ed7
+          name: '% wykorzystania CPU'
+          key: 'system.cpu.util[all,system,avg1]'
+          delay: 3m
+          value_type: FLOAT
+          triggers:
+            - uuid: d25f3ca4569449498072f08c062446d4
+              expression: 'last(/Monitoring Windows/system.cpu.util[all,system,avg1],#3)>80'
+              name: 'Wykorzystanie 80% CPU'
+              priority: AVERAGE
+            - uuid: 5043773137554071b0230edf889281d4
+              expression: 'last(/Monitoring Windows/system.cpu.util[all,system,avg1],#3)>95'
+              name: 'Wykorzystanie 95% CPU'
+              priority: HIGH
+        - uuid: a9f89fe3a34c43dab39c15276d6a7af9
+          name: '% wykorzystania dysku'
+          key: 'vfs.fs.size[c:,pused]'
+          delay: 3m
+          value_type: FLOAT
+          units: '%'
+          triggers:
+            - uuid: 3d30cd4ea4014950863862321c0b8a88
+              expression: 'last(/Monitoring Windows/vfs.fs.size[c:,pused],#3)>80'
+              name: 'Zajęte 80% Dysku'
+              priority: AVERAGE
+            - uuid: 776567cfea974f3fb88f653f4ff5ed4f
+              expression: 'last(/Monitoring Windows/vfs.fs.size[c:,pused],#3)>95'
+              name: 'Zajęte 95% Dysku'
+              priority: HIGH
+        - uuid: 9040545751de4a2dbe7756bfbceb6990
+          name: '% Używanej Pamięci'
+          key: 'vm.memory.size[pused]'
+          delay: 3m
+          value_type: FLOAT
+          units: '%'
+          triggers:
+            - uuid: 3031f08502064d93b094ef50d9183d5c
+              expression: 'last(/Monitoring Windows/vm.memory.size[pused],#3)>95'
+              name: 'Mniej niż 5% pamięci'
+              priority: HIGH
+            - uuid: c87076c8c8274121b7ef851d1f67c830
+              expression: 'last(/Monitoring Windows/vm.memory.size[pused],#3)>20'
+              name: 'Mniej niż 20% pamięci'
+              priority: AVERAGE
+  graphs:
+    - uuid: 3a73a62cc63d419581c8d56893d5d7b6
+      name: '% zużytej pamięci RAM'
+      graph_items:
+        - color: 1A7C11
+          calc_fnc: ALL
+          item:
+            host: 'Monitoring Windows'
+            key: 'vm.memory.size[pused]'
+    - uuid: 3ae538551d1741efa93c07dbf47abcf8
+      name: CPU
+      graph_items:
+        - color: 1A7C11
+          calc_fnc: ALL
+          item:
+            host: 'Monitoring Windows'
+            key: 'system.cpu.util[all,system,avg1]'
+    - uuid: d5db48cea7024dfa8ae1ab4e4f586276
+      name: 'Dysk C:\'
+      graph_items:
+        - color: 1A7C11
+          calc_fnc: ALL
+          item:
+            host: 'Monitoring Windows'
+            key: 'vfs.fs.size[c:,pused]'
+    - uuid: cbc21a8a7b67465bb72a4476285fe661
+      name: 'Wykorzystanie Sieci'
+      show_work_period: 'NO'
+      show_triggers: 'NO'
+      graph_items:
+        - color: FF8000
+          calc_fnc: MIN
+          item:
+            host: 'Monitoring Windows'
+            key: 'net.if.in["{2AC8116E-8146-4494-8A06-8138A35BF197}"]'
+        - sortorder: '1'
+          color: '274482'
+          calc_fnc: MIN
+          item:
+            host: 'Monitoring Windows'
+            key: 'net.if.out["{2AC8116E-8146-4494-8A06-8138A35BF197}"]'
